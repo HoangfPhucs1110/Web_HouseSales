@@ -1,24 +1,71 @@
 ﻿@model IEnumerable<Web_HouseSale.Models.Product>
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    var page = (int)(ViewBag.Page ?? 1);
-    var totalPages = (int)(ViewBag.TotalPages ?? 1);
-    var sort = (int)(ViewBag.Sort ?? 1);
+
+    var page = ViewBag.Page as int? ?? 1;
+    var totalPages = ViewBag.TotalPages as int? ?? 1;
+    var sort = ViewBag.Sort as int? ?? 1;
+    string[] brands = (ViewBag.SelectedBrands as string[]) ?? new string[0];
+
+    Func<string, bool> isChecked = b =>
+        brands.Any(x => string.Equals((x ?? "").Trim(), (b ?? "").Trim(), StringComparison.OrdinalIgnoreCase));
 
     Func<Web_HouseSale.Models.Product, string> firstImg = p =>
         !string.IsNullOrWhiteSpace(p.ImageUrl) ? p.ImageUrl :
         !string.IsNullOrWhiteSpace(p.ImageUrl2) ? p.ImageUrl2 :
         !string.IsNullOrWhiteSpace(p.ImageUrl3) ? p.ImageUrl3 :
         (!string.IsNullOrWhiteSpace(p.ImageUrl4) ? p.ImageUrl4 : "~/img/product01.png");
+
+    Func<int, string> pageUrl = p =>
+    {
+        var qs = System.Web.HttpUtility.ParseQueryString(string.Empty);
+        qs["page"] = p.ToString();
+        qs["sort"] = sort.ToString();
+        if (brands != null)
+        {
+            foreach (var b in brands)
+            {
+                if (!string.IsNullOrWhiteSpace(b))
+                    qs.Add("brands", b);
+            }
+        }
+        var baseUrl = Url.Action("Index", "Store"); // /Store/Index
+        return baseUrl + "?" + qs.ToString();
+    };
 }
 
-<!-- optional: giúp thẻ đều nhau -->
 <style>
+    /* căn card đều & ảnh không vỡ bố cục */
+    #store .products-grid {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+        #store .products-grid > [class*="col-"] {
+            display: flex;
+        }
+
+    #store .product {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
     #store .product-img img {
         width: 100%;
         height: 220px;
         object-fit: contain;
         display: block;
+    }
+
+    .store-filter .store-sort {
+        float: right;
+    }
+
+    .store-filter:after {
+        content: "";
+        display: block;
+        clear: both;
     }
 </style>
 
@@ -40,30 +87,54 @@
 <div class="section">
     <div class="container">
         <div class="row">
-            <!-- ASIDE -->
+
+            <!-- ASIDE: Bộ lọc -->
             <div id="aside" class="col-md-3">
                 <div class="aside">
                     <h3 class="aside-title">Brand</h3>
-                    <div class="checkbox-filter">
-                        <div class="input-checkbox"><input type="checkbox" id="brand-1"><label for="brand-1"><span></span>Iphone</label></div>
-                        <div class="input-checkbox"><input type="checkbox" id="brand-2"><label for="brand-2"><span></span>Samsung</label></div>
-                        <div class="input-checkbox"><input type="checkbox" id="brand-3"><label for="brand-3"><span></span>Xiaomi</label></div>
-                        <div class="input-checkbox"><input type="checkbox" id="brand-4"><label for="brand-4"><span></span>Vivo</label></div>
-                    </div>
+                    @using (Html.BeginForm("Index", "Store", FormMethod.Get, new { id = "brandFilterForm" }))
+                    {
+                        <div class="checkbox-filter">
+                            <div class="input-checkbox">
+                                <input type="checkbox" id="brand-iphone" name="brands" value="Iphone" @(isChecked("Iphone") ? "checked" : "") />
+                                <label for="brand-iphone"><span></span>Iphone</label>
+                            </div>
+                            <div class="input-checkbox">
+                                <input type="checkbox" id="brand-samsung" name="brands" value="Samsung" @(isChecked("Samsung") ? "checked" : "") />
+                                <label for="brand-samsung"><span></span>Samsung</label>
+                            </div>
+                            <div class="input-checkbox">
+                                <input type="checkbox" id="brand-xiaomi" name="brands" value="Xiaomi" @(isChecked("Xiaomi") ? "checked" : "") />
+                                <label for="brand-xiaomi"><span></span>Xiaomi</label>
+                            </div>
+                            <div class="input-checkbox">
+                                <input type="checkbox" id="brand-vivo" name="brands" value="Vivo" @(isChecked("Vivo") ? "checked" : "") />
+                                <label for="brand-vivo"><span></span>Vivo</label>
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="sort" value="@sort" />
+                        <input type="hidden" name="page" value="1" />
+
+                        <button type="submit" class="primary-btn" style="margin-top:10px">Lọc</button>
+                        <a class="btn btn-default" href="@Url.Action("Index","Store")" style="margin-left:8px">Xoá lọc</a>
+                    }
                 </div>
             </div>
             <!-- /ASIDE -->
             <!-- STORE -->
             <div id="store" class="col-md-9">
 
-                <!-- store top filter -->
+                <!-- TOP FILTER -->
                 <div class="store-filter clearfix">
                     <div class="store-sort">
-                        @using (Html.BeginForm("Index", "Store", FormMethod.Get, new { @class = "form-inline" }))
+                        @using (Html.BeginForm("Index", "Store", FormMethod.Get, new { id = "sortForm" }))
                         {
+                            foreach (var b in brands)
+                            {<input type="hidden" name="brands" value="@b" /> }
                             <label>
                                 Sort By:
-                                <select name="sort" class="input-select" onchange="this.form.submit()">
+                                <select name="sort" class="input-select" onchange="document.getElementById('sortForm').submit()">
                                     <option value="1" @(sort == 1 ? "selected" : "")>Newest</option>
                                     <option value="2" @(sort == 2 ? "selected" : "")>Oldest</option>
                                     <option value="3" @(sort == 3 ? "selected" : "")>Price(High To Low)</option>
@@ -74,20 +145,21 @@
                         }
                     </div>
                 </div>
-                <!-- /store top filter -->
-                <!-- store products -->
-                <div class="row">
+                <!-- /TOP FILTER -->
+                <!-- PRODUCTS GRID -->
+                <div class="row products-grid">
+                    @{ var i = 0; }
                     @foreach (var p in Model)
                     {
+                        i++;
                         <div class="col-md-4 col-sm-6 col-xs-6">
                             <div class="product">
                                 <div class="product-img">
                                     <img src="@Url.Content(firstImg(p))" alt="@p.Name" />
                                     <div class="product-label">
-                                        @if (p.SalePercent.HasValue && p.SalePercent.Value > 0)
-                                        {<span class="sale">-@p.SalePercent%</span>}
-                                        @if (p.IsNew)
-                                        {<span class="new">NEW</span>}
+                                        @Html.Raw(p.SalePercent.HasValue && p.SalePercent.Value > 0
+                                            ? $"<span class=\"sale\">-{p.SalePercent}%</span>" : "")
+                                        @Html.Raw(p.IsNew ? "<span class=\"new\">NEW</span>" : "")
                                     </div>
                                 </div>
                                 <div class="product-body">
@@ -97,46 +169,53 @@
                                     </h3>
                                     <h4 class="product-price">
                                         @p.Price.ToString("c")
-                                        @if (p.OldPrice.HasValue)
-                                        {<del class="product-old-price">@p.OldPrice.Value.ToString("c")</del>}
+                                        @Html.Raw(p.OldPrice.HasValue
+                                            ? $"<del class=\"product-old-price\">{p.OldPrice.Value.ToString("c")}</del>"
+                                            : "")
                                     </h4>
                                 </div>
                             </div>
                         </div>
+
+                        @Html.Raw(i % 3 == 0 ? "<div class=\"clearfix visible-md visible-lg\"></div>" : "")
+                        @Html.Raw(i % 2 == 0 ? "<div class=\"clearfix visible-sm visible-xs\"></div>" : "")
                     }
                 </div>
-                <!-- /store products -->
-                <!-- store bottom filter (pagination) -->
-                <div class="store-filter clearfix">
-                    <span class="store-qty">
-                        Page @page of @totalPages
-                    </span>
+                <!-- /PRODUCTS GRID -->
+                <!-- PAGINATION -->
+                <div class="store-filter clearfix" style="margin-top:10px">
+                    <span class="store-qty">Page @page of @totalPages</span>
                     <ul class="store-pagination">
-                        @if (page > 1)
-                        {
-                            <li><a href="@Url.Action("Index","Store", new { page = page-1, sort = sort })"><i class="fa fa-angle-left"></i></a></li>
+                        @{
+                            int current = page;
+                            int last = totalPages;
                         }
-                        @for (int i = 1; i <= totalPages; i++)
+                        @if (current > 1)
                         {
-                            if (i == page)
+                            <li><a href="@pageUrl(current-1)"><i class="fa fa-angle-left"></i></a></li>
+}
+                        @for (int p = 1; p <= last; p++)
+                        {
+                            if (p == current)
                             {
-                                <li class="active">@i</li>
+                                <li class="active">@p</li>
  }
                             else
                             {
-                                <li><a href="@Url.Action("Index","Store", new { page = i, sort = sort })">@i</a></li>
+                                <li><a href="@pageUrl(p)">@p</a></li>
 }
                         }
-                        @if (page < totalPages)
+                        @if (current < last)
                         {
-                            <li><a href="@Url.Action("Index","Store", new { page = page+1, sort = sort })"><i class="fa fa-angle-right"></i></a></li>
-                        }
+                            <li><a href="@pageUrl(current+1)"><i class="fa fa-angle-right"></i></a></li>
+}
                     </ul>
                 </div>
-                <!-- /store bottom filter -->
+                <!-- /PAGINATION -->
 
             </div>
             <!-- /STORE -->
+
         </div>
     </div>
 </div>

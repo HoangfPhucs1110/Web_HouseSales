@@ -65,11 +65,6 @@
                                                 {<del class="product-old-price">@p.OldPrice.Value.ToString("c")</del>}
                                             </h4>
                                         </div>
-                                        <div class="add-to-cart">
-                                            <a class="add-to-cart-btn" href="@Url.Action("Index", "Checkout")">
-                                                <i class="fa fa-shopping-cart"></i> Thêm vào giỏ
-                                            </a>
-                                        </div>
                                     </div>
                                 }
                             </div>
@@ -171,11 +166,6 @@
                                                 @if (p.OldPrice.HasValue)
                                                 {<del class="product-old-price">@p.OldPrice.Value.ToString("c")</del>}
                                             </h4>
-                                        </div>
-                                        <div class="add-to-cart">
-                                            <a class="add-to-cart-btn" href="@Url.Action("Index", "Checkout")">
-                                                <i class="fa fa-shopping-cart"></i> Thêm vào giỏ
-                                            </a>
                                         </div>
                                     </div>
                                 }
