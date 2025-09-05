@@ -1,0 +1,184 @@
+﻿@model Web_HouseSale.Models.Product
+@using System.Linq
+
+@{
+    ViewBag.Title = (Model != null && !string.IsNullOrWhiteSpace(Model.Name)) ? Model.Name : "Product";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var imgList = new[] {
+        (Model != null ? Model.ImageUrl  : null),
+        (Model != null ? Model.ImageUrl2 : null),
+        (Model != null ? Model.ImageUrl3 : null),
+        (Model != null ? Model.ImageUrl4 : null)
+    }
+    .Where(x => !string.IsNullOrWhiteSpace(x))
+    .ToList();
+
+    if (imgList.Count == 0) { imgList.Add("~/img/product01.png"); }
+
+    var colorCsv = (Model != null ? Model.Colors : null);
+    var colors = !string.IsNullOrWhiteSpace(colorCsv)
+        ? colorCsv.Split(',').Select(s => s.Trim()).Where(s => s.Length > 0).ToList()
+        : new System.Collections.Generic.List<string> { "Black", "White", "Blue", "Red" };
+
+    var storages = new[] { "128GB", "256GB", "512GB", "1TB" };
+
+    var allowedCats = new[] { "Iphone", "Samsung", "Xiaomi", "Vivo" };
+    var showCategory = (Model != null ? (Model.Category ?? "") : "");
+    var showCatOk = allowedCats.Any(c => string.Equals(c, showCategory, System.StringComparison.OrdinalIgnoreCase));
+}
+
+<!-- BREADCRUMB -->
+<div id="breadcrumb" class="section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <ul class="breadcrumb-tree">
+                    <li><a href="@Url.Action("Index","Home")">Home</a></li>
+                    <li><a href="@Url.Action("Index","Store")">Store</a></li>
+                    <li class="active">@((Model != null) ? Model.Name : "Product")</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /BREADCRUMB -->
+<!-- SECTION -->
+<div class="section">
+    <div class="container">
+        <div class="row">
+
+            <!-- Product main img -->
+            <div class="col-md-5 col-md-push-2">
+                <div id="product-main-img">
+                    @foreach (var img in imgList)
+                    {
+                        <div class="product-preview">
+                            <img src="@Url.Content(img)" alt="@((Model != null) ? Model.Name : "")" />
+                        </div>
+                    }
+                </div>
+            </div>
+            <!-- /Product main img -->
+            <!-- Product thumb imgs -->
+            <div class="col-md-2 col-md-pull-5">
+                <div id="product-imgs">
+                    @foreach (var img in imgList)
+                    {
+                        <div class="product-preview">
+                            <img src="@Url.Content(img)" alt="@((Model != null) ? Model.Name : "")" />
+                        </div>
+                    }
+                </div>
+            </div>
+            <!-- /Product thumb imgs -->
+            <!-- Product details -->
+            <div class="col-md-5">
+                <div class="product-details">
+                    <h2 class="product-name">@((Model != null) ? Model.Name : "")</h2>
+
+                    @if (showCatOk)
+                    {
+                        <p class="product-category" style="margin-bottom:6px">
+                            <strong>Category:</strong> @showCategory
+                        </p>
+                    }
+
+                    <div style="margin-bottom:10px">
+                        <h3 class="product-price">
+                            @(((Model != null) ? Model.Price : 0M).ToString("c"))
+                            @if (Model != null && Model.OldPrice.HasValue)
+                            {
+                                <del class="product-old-price">@Model.OldPrice.Value.ToString("c")</del>
+                            }
+                        </h3>
+                        @if (Model != null && Model.Stock > 0)
+                        {
+                            <span class="product-available">Còn hàng (@Model.Stock)</span>
+                        }
+                        else
+                        {
+                            <span class="product-available" style="color:#e74c3c">Hết hàng</span>
+                        }
+                    </div>
+
+                    <!-- Mô tả ngắn ngay dưới giá -->
+                    @if (Model != null && !string.IsNullOrWhiteSpace(Model.ShortDesc))
+                    {
+                        <p>@Model.ShortDesc</p>
+                    }
+
+                    <!-- Options: Color + Dung lượng -->
+                    <form id="addToCartForm" method="post" action="@Url.Action("AddToCart","Cart")">
+                        <input type="hidden" name="id" value="@Model.Id" />
+
+                        <div class="product-options">
+                            <label>
+                                Color
+                                <select class="input-select" id="color" name="color">
+                                    @foreach (var c in colors)
+                                    {
+                                        <option value="@c">@c</option>
+                                    }
+                                </select>
+                            </label>
+
+                            <label>
+                                Dung lượng
+                                <select class="input-select" id="storage" name="storage">
+                                    @foreach (var s in storages)
+                                    {
+                                        <option value="@s">@s</option>
+                                    }
+                                </select>
+                            </label>
+                        </div>
+
+                        <div class="add-to-cart">
+                            <div class="qty-label">
+                                <span>Số lượng</span>
+                                <div class="input-number">
+                                    <input type="number" name="quantity" id="quantity" value="1" min="1" max="999" />
+                                    <span class="qty-up">+</span>
+                                    <span class="qty-down">-</span>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="add-to-cart-btn">
+                                <i class="fa fa-shopping-cart"></i> Thêm vào giỏ
+                            </button>
+                        </div>
+                    </form>
+
+                    <script>
+                        document.querySelector("form").addEventListener("submit", function (e) {
+                            document.getElementById("selectedColor").value = document.getElementById("color").value;
+                            document.getElementById("selectedStorage").value = document.getElementById("storage").value;
+                        });
+                    </script>
+
+                </div>
+                </div>
+            </div>
+            <!-- /Product details -->
+            <!-- Mô tả chi tiết -->
+            <div class="col-md-12" style="margin-top:24px">
+                <div class="section-title">
+                    <h3 class="title">Mô tả chi tiết</h3>
+                </div>
+                <div class="well" style="background:#fff">
+                    @if (Model != null && !string.IsNullOrWhiteSpace(Model.Description))
+                    {
+                        @Html.Raw(Model.Description)
+                    }
+                    else
+                    {
+                        <p>(Chưa có mô tả chi tiết)</p>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<!-- /SECTION -->

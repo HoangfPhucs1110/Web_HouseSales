@@ -1,0 +1,61 @@
+﻿@model List<Web_HouseSale.Models.CartItem>
+@{
+    ViewBag.Title = "Giỏ hàng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var total = Model.Sum(item => item.Product.Price * item.Quantity);
+}
+
+<div class="container" style="margin-top: 30px;">
+    <h2>Giỏ hàng</h2>
+    @if (!Model.Any())
+    {
+        <p>Không có sản phẩm nào trong giỏ hàng.</p>
+    }
+    else
+    {
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Sản phẩm</th>
+                    <th>Màu sắc</th>
+                    <th>Dung lượng</th>
+                    <th>Số lượng</th>
+                    <th>Giá</th>
+                    <th>Tổng</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.Product.Name</td>
+                        <td>@item.Color</td>
+                        <td>@item.Storage</td>
+                        <td>
+                            <form action="@Url.Action("UpdateQuantity", "Cart")" method="post" style="display:flex;gap:8px">
+                                <input type="hidden" name="id" value="@item.Product.Id" />
+                                <input type="hidden" name="color" value="@item.Color" />
+                                <input type="hidden" name="storage" value="@item.Storage" />
+                                <input type="number" name="quantity" value="@item.Quantity" min="1" style="width:60px" />
+                                <button type="submit" class="btn btn-sm btn-primary">Cập nhật</button>
+                            </form>
+                        </td>
+                        <td>@item.Product.Price.ToString("c")</td>
+                        <td>@(item.Product.Price * item.Quantity)</td>
+                        <td>
+                            <form action="@Url.Action("RemoveItem", "Cart")" method="post">
+                                <input type="hidden" name="id" value="@item.Product.Id" />
+                                <input type="hidden" name="color" value="@item.Color" />
+                                <input type="hidden" name="storage" value="@item.Storage" />
+                                <button type="submit" class="btn btn-sm btn-danger">Xoá</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <h4>Tổng cộng: <strong>@total.ToString("c")</strong></h4>
+        <a class="btn btn-success" href="@Url.Action("Index", "Checkout")">Thanh toán</a>
+    }
+</div>
